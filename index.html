@@ -115,23 +115,51 @@ function animate(){
  $('speed').textContent=Math.round(speed*3.6);gear=speed<2?1:Math.min(8,Math.floor(speed/12)+1);$('gear').textContent=gear;
  $('time').textContent=fmt(elapsed);
  }}
- let p=player.position,forward=new THREE.Vector3(-Math.sin(player.rotation.y),0,-Math.cos(player.rotation.y));let target=new THREE.Vector3(p.x-forward.x*14,7.2,p.z-forward.z*14);camera.position.lerp(target,.14);let look=new THREE.Vector3(p.x+forward.x*7,1.25,p.z+forward.z*7);camera.lookAt(look);
+ // Chase camera: calculate offsets in the car's LOCAL coordinates, not by guessing its heading.
+ // Local +Z is behind the car (the nose points along local -Z).
+ const camPos=player.localToWorld(new THREE.Vector3(0,7.5,16));
+ const lookPos=player.localToWorld(new THREE.Vector3(0,1.15,-8));
+ const smooth=1-Math.exp(-7*dt);
+ camera.position.lerp(camPos,smooth);
+ camera.up.set(0,1,0);
+ camera.lookAt(lookPos);
  renderer.render(scene,camera);
 }
 $('start').onclick=begin;$('again').onclick=()=>{result.style.display='none';overlay.style.display='grid';$('lights').querySelectorAll('.light').forEach(l=>l.classList.remove('on'))};
 $('mode').onchange=()=>{$('careerInfo').textContent=$('mode').value==='career'?`Career progress: ${careerWins} wins · ${careerPoints} points. Results are saved in this browser.`:'Jump straight into a race and fight for the win.'};
 window.addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.code]=false);
+// Multi-touch: track pointer IDs independently, so releasing one finger never releases another button.
+const touchPointers=new Map();
 document.querySelectorAll('.touchbtn').forEach(b=>{
  const k=b.dataset.key;
- const press=e=>{e.preventDefault();keys[k]=true;b.classList.add('pressed');if(b.setPointerCapture&&e.pointerId!==undefined){try{b.setPointerCapture(e.pointerId)}catch(_){}}};
- const release=e=>{if(e)e.preventDefault();keys[k]=false;b.classList.remove('pressed')};
+ const press=e=>{
+  e.preventDefault();
+  if(touchPointers.has(e.pointerId))return;
+  touchPointers.set(e.pointerId,{key:k,button:b});
+  keys[k]=true;b.classList.add('pressed');
+  try{b.setPointerCapture(e.pointerId)}catch(_){}
+ };
+ const release=e=>{
+  if(e)e.preventDefault();
+  const active=touchPointers.get(e.pointerId);
+  if(!active)return;
+  touchPointers.delete(e.pointerId);
+  const stillHeld=[...touchPointers.values()].some(p=>p.key===active.key);
+  if(!stillHeld)keys[active.key]=false;
+  const buttonStillHeld=[...touchPointers.values()].some(p=>p.button===active.button);
+  if(!buttonStillHeld)active.button.classList.remove('pressed');
+ };
  b.addEventListener('pointerdown',press);
  b.addEventListener('pointerup',release);
  b.addEventListener('pointercancel',release);
  b.addEventListener('lostpointercapture',release);
  b.addEventListener('contextmenu',e=>e.preventDefault());
 });
-window.addEventListener('blur',()=>{keys={}});
+function releaseAllTouches(){
+ for(const [id,p] of touchPointers){keys[p.key]=false;p.button.classList.remove('pressed')}
+ touchPointers.clear();
+}
+window.addEventListener('blur',()=>{keys={};releaseAllTouches()});
 init();
 })();
 </script>
