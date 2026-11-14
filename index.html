@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sasha Formula Racing</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#071018;color:#eef5ff;font-family:Arial,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#game{position:fixed;inset:0}canvas{display:block}
+#top{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;gap:8px}
+.panel{background:#081522dd;border:1px solid #ffffff25;border-radius:12px;padding:10px 14px;backdrop-filter:blur(8px);box-shadow:0 5px 22px #0005}
+#brand{font-weight:900;letter-spacing:1px;color:#ff344d}#stats{display:flex;gap:14px;font-variant-numeric:tabular-nums}
+.stat small{display:block;color:#91a7bd;font-size:10px;text-transform:uppercase}.stat b{font-size:20px}
+#lights{position:fixed;top:82px;left:50%;transform:translateX(-50%);display:flex;gap:9px;padding:12px 18px;background:#101820dd;border-radius:30px;border:1px solid #ffffff22}
+.light{width:18px;height:18px;border-radius:50%;background:#292e34;border:2px solid #555}.light.on{background:#ff243e;box-shadow:0 0 16px #ff243e}
+#message{position:fixed;top:145px;left:50%;transform:translateX(-50%);font-weight:900;font-size:clamp(24px,5vw,48px);text-shadow:0 3px 12px #000;text-align:center;pointer-events:none}
+#bottom{position:fixed;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:end;pointer-events:none}
+#help{font-size:12px;line-height:1.6;color:#d5e2ef}#gear{font-size:30px;font-weight:900}
+#overlay{position:fixed;inset:0;background:linear-gradient(135deg,#071018ed,#10283aee);display:grid;place-items:center;padding:20px;z-index:5}
+#menu{width:min(540px,100%);padding:26px;border:1px solid #ffffff25;border-radius:22px;background:#0c1b29f2;box-shadow:0 20px 80px #0009}
+h1{font-size:clamp(32px,8vw,54px);line-height:.95;margin:0 0 8px;font-style:italic}h1 span{color:#ff344d}
+.sub{color:#9db2c8;margin:0 0 22px}.row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+button,select{border:1px solid #ffffff2b;background:#172c3e;color:white;border-radius:10px;padding:12px 16px;font-weight:700;font-size:14px}
+button{cursor:pointer}button.primary{background:#ed2944;border-color:#ed2944;flex:1}button:active{transform:scale(.98)}
+select{flex:1;min-width:130px}#careerInfo{font-size:13px;color:#b8c9d8;line-height:1.5;margin:14px 0}
+#touch{position:fixed;bottom:18px;left:0;right:0;display:none;justify-content:space-between;padding:0 18px;pointer-events:none;z-index:3}
+.pad{display:flex;gap:10px}.touchbtn{pointer-events:auto;width:68px;height:68px;border-radius:18px;background:#0b1a2beF;border:2px solid #ffffff70;color:white;font-size:24px;font-weight:900;touch-action:none;user-select:none;-webkit-user-select:none;outline:none}
+@media(pointer:coarse),(max-width:800px){#touch{display:flex}#help{display:none}}
+#result{display:none;position:fixed;inset:0;z-index:4;background:#071018dd;place-items:center;text-align:center}
+#result .panel{width:min(420px,90vw);padding:28px}
+</style>
+</head>
+<body>
+<div id="game"></div>
+<div id="top">
+ <div class="panel"><div id="brand">SFR // GRAND PRIX</div><small id="modeLabel">QUICK RACE</small></div>
+ <div class="panel" id="stats">
+  <div class="stat"><small>Speed</small><b id="speed">0</b><small>km/h</small></div>
+  <div class="stat"><small>Lap</small><b id="lap">1/3</b></div>
+  <div class="stat"><small>Time</small><b id="time">00:00.0</b></div>
+ </div>
+</div>
+<div id="lights"><i class="light"></i><i class="light"></i><i class="light"></i><i class="light"></i><i class="light"></i></div>
+<div id="message">GET READY</div>
+<div id="bottom"><div class="panel" id="help">W / ↑ accelerate · S / ↓ brake<br>A D / ← → steer · SPACE handbrake</div><div class="panel"><div id="gear">N</div><small>GEAR</small></div></div>
+<div id="touch"><div class="pad"><button class="touchbtn" data-key="ArrowLeft">◀</button><button class="touchbtn" data-key="ArrowRight">▶</button></div><div class="pad"><button class="touchbtn" data-key="ArrowDown">▼</button><button class="touchbtn" data-key="ArrowUp">▲</button></div></div>
+<div id="overlay"><div id="menu">
+ <h1>SASHA <span>FORMULA</span><br>RACING</h1><p class="sub">A browser-based 3D grand prix prototype</p>
+ <div class="row"><select id="mode"><option value="quick">Quick Race</option><option value="career">Career Championship</option></select><select id="laps"><option value="3">3 laps</option><option value="5">5 laps</option><option value="10">10 laps</option></select></div>
+ <div id="careerInfo">Career: win races, earn championship points and save your progress in this browser.</div>
+ <button class="primary" id="start">START RACE →</button>
+ <p style="color:#8298ad;font-size:11px;margin:18px 0 0">Prototype 0.1 · Fictional teams and cars · Three.js</p>
+ </div></div>
+<div id="result"><div class="panel"><h1 id="resultTitle">FINISH!</h1><p id="resultText"></p><button class="primary" id="again">BACK TO GARAGE</button></div></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script>
+(()=>{
+const root=document.getElementById('game'), overlay=document.getElementById('overlay'), result=document.getElementById('result');
+const $=id=>document.getElementById(id);
+let scene,camera,renderer,player,ai=[],clock=new THREE.Clock(),running=false,started=false,elapsed=0,lap=1,totalLaps=3,lastAngle=0,angle=0,speed=0,steer=0,gear=1,mode='quick',keys={},raceStart=0,careerWins=Number(localStorage.getItem('sfrWins')||0),careerPoints=Number(localStorage.getItem('sfrPoints')||0);
+const A=46,B=29,ROAD=13,TAU=Math.PI*2;
+function init(){
+ scene=new THREE.Scene();scene.background=new THREE.Color(0x87b7d4);scene.fog=new THREE.Fog(0x87b7d4,100,240);
+ camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,500);
+ renderer=new THREE.WebGLRenderer({antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;root.appendChild(renderer.domElement);
+ scene.add(new THREE.HemisphereLight(0xe7f5ff,0x34452e,2));
+ const sun=new THREE.DirectionalLight(0xffffff,2.3);sun.position.set(-35,65,20);sun.castShadow=true;scene.add(sun);
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:0x397348,roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-.18;ground.receiveShadow=true;scene.add(ground);
+ // Asphalt ring mesh
+ const verts=[],inds=[];const n=360;
+ for(let i=0;i<=n;i++){let t=i/n*TAU;for(let s of [-1,1]){let x=A*Math.cos(t),z=B*Math.sin(t),nx=Math.cos(t)/A,nz=Math.sin(t)/B,l=Math.hypot(nx,nz);verts.push(x+s*(ROAD/2)*nx/l,.02,z+s*(ROAD/2)*nz/l)}}
+ for(let i=0;i<n;i++){let k=i*2;inds.push(k,k+1,k+2,k+1,k+3,k+2)}
+ let g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));g.setIndex(inds);g.computeVertexNormals();
+ let road=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:0x30343a,roughness:.92,side:THREE.DoubleSide}));road.receiveShadow=true;scene.add(road);
+ // kerbs, barriers, dashed centre markers
+ for(let t=0;t<TAU;t+=.055){let x=A*Math.cos(t),z=B*Math.sin(t),nx=Math.cos(t)/A,nz=Math.sin(t)/B,l=Math.hypot(nx,nz);
+  for(let side of [-1,1]){let curb=new THREE.Mesh(new THREE.BoxGeometry(1.2,.18,1.1),new THREE.MeshStandardMaterial({color:Math.floor(t/.055)%2?0xffffff:0xe52c40}));curb.position.set(x+side*(ROAD/2+1)*nx/l,.12,z+side*(ROAD/2+1)*nz/l);curb.rotation.y=-t;scene.add(curb)}
+ }
+ // grandstands and trees
+ for(let i=0;i<24;i++){let t=i/24*TAU,x=(A+19)*Math.cos(t),z=(B+19)*Math.sin(t);let tree=new THREE.Group();let trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.5,3,7),new THREE.MeshStandardMaterial({color:0x725036}));trunk.position.y=1.5;tree.add(trunk);let crown=new THREE.Mesh(new THREE.ConeGeometry(2.4,6,8),new THREE.MeshStandardMaterial({color:0x1e6037}));crown.position.y=5;tree.add(crown);tree.position.set(x,0,z);scene.add(tree)}
+ // start/finish line
+ const line=new THREE.Mesh(new THREE.BoxGeometry(1,.05,ROAD),new THREE.MeshStandardMaterial({color:0xffffff}));line.position.set(A,.08,0);scene.add(line);
+ player=makeCar(0xff243f);scene.add(player);
+ const colors=[0x16a6ff,0xffd32a,0xeeeeee,0x9b59ff];ai=colors.map(c=>{let o=makeCar(c);scene.add(o);return {obj:o,t:Math.random()*TAU,pace:.0132+Math.random()*.0018,progress:0}});
+ window.addEventListener('resize',resize);resize();animate();
+}
+function makeCar(color){
+ let group=new THREE.Group(),body=new THREE.Mesh(new THREE.BoxGeometry(2.25,.65,4.8),new THREE.MeshStandardMaterial({color,metalness:.25,roughness:.35}));body.position.y=.75;body.castShadow=true;group.add(body);
+ let nose=new THREE.Mesh(new THREE.ConeGeometry(.48,2.6,4),new THREE.MeshStandardMaterial({color}));nose.rotation.x=Math.PI/2;nose.rotation.z=Math.PI/4;nose.position.set(0,.63,-3);group.add(nose);
+ let cockpit=new THREE.Mesh(new THREE.SphereGeometry(.72,16,10),new THREE.MeshStandardMaterial({color:0x101b27,metalness:.4,roughness:.2}));cockpit.scale.set(.8,.48,1.05);cockpit.position.set(0,1.18,-.35);group.add(cockpit);
+ for(let x of [-1.25,1.25])for(let z of [-1.55,1.55]){let w=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,.38,16),new THREE.MeshStandardMaterial({color:0x111111,roughness:1}));w.rotation.z=Math.PI/2;w.position.set(x,.52,z);w.castShadow=true;group.add(w)}
+ let wing=new THREE.Mesh(new THREE.BoxGeometry(3.4,.18,.55),new THREE.MeshStandardMaterial({color:0x171b20}));wing.position.set(0,1.05,2.25);group.add(wing);
+ return group;
+}
+function pos(t){return {x:A*Math.cos(t),z:B*Math.sin(t)}}
+function tangent(t){return Math.atan2(B*Math.cos(t),-A*Math.sin(t))}
+function resize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+function updateCar(o,t){let p=pos(t);o.position.set(p.x,0,p.z);o.rotation.y=-tangent(t)+Math.PI/2}
+function begin(){
+ mode=$('mode').value;totalLaps=Number($('laps').value);$('modeLabel').textContent=mode==='career'?'CHAMPIONSHIP':'QUICK RACE';$('overlay').style.display='none';result.style.display='none';
+ speed=0;lap=1;elapsed=0;angle=0;lastAngle=0;started=false;running=true;raceStart=performance.now();ai.forEach((a,i)=>{a.t=-(i+1)*.10;a.progress=0;updateCar(a.obj,a.t)});updateCar(player,angle);$('message').textContent='GET READY';$('message').style.display='block';
+}
+function countdown(){let sec=(performance.now()-raceStart)/1000;if(sec<1){$('message').textContent='';$('lights').querySelectorAll('.light').forEach((l,i)=>l.classList.toggle('on',i<1))}else if(sec<2){$('lights').querySelectorAll('.light').forEach((l,i)=>l.classList.toggle('on',i<2))}else if(sec<3){$('lights').querySelectorAll('.light').forEach((l,i)=>l.classList.toggle('on',i<5))}else if(sec<3.7){$('message').textContent='';$('lights').querySelectorAll('.light').forEach(l=>l.classList.remove('on'))}else if(!started){started=true;$('message').textContent='GO!';setTimeout(()=>{$('message').style.display='none'},900)}}
+function finish(){running=false;$('message').style.display='none';let place=1+ai.filter(a=>a.progress> (lap-1)*TAU+angle).length;let won=place===1;if(mode==='career'){if(won){careerWins++;careerPoints+=25}else careerPoints+=Math.max(0,26-place*5);localStorage.setItem('sfrWins',careerWins);localStorage.setItem('sfrPoints',careerPoints)}
+ $('resultTitle').textContent=won?'🏆 VICTORY!':'RACE FINISHED';$('resultText').innerHTML=`Position: <b>P${place}</b><br>Time: ${fmt(elapsed)}<br>${mode==='career'?`Career wins: ${careerWins} · Points: ${careerPoints}`:'Great driving!'} `;$('result').style.display='grid';}
+function fmt(s){let m=Math.floor(s/60),sec=(s%60).toFixed(1).padStart(4,'0');return String(m).padStart(2,'0')+':'+sec}
+function animate(){
+ requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);
+ if(running){countdown();if(started){elapsed+=dt;
+ let throttle=keys.ArrowUp||keys.KeyW,brake=keys.ArrowDown||keys.KeyS,left=keys.ArrowLeft||keys.KeyA,right=keys.ArrowRight||keys.KeyD,hand=keys.Space;
+ let accel=throttle?31:0;speed+=accel*dt;speed-= (brake?58:7+(speed>0?speed*.025:0))*dt;if(hand)speed-=35*dt;speed=Math.max(0,Math.min(92,speed));
+ steer+=(Number(right)-Number(left))*dt*2.7;steer*=Math.pow(.04,dt);let angular=(speed/92)*.95;angle+=angular*dt*(1+steer*.75);angle=(angle%TAU+TAU)%TAU;
+ let p=pos(angle);updateCar(player,angle);
+ ai.forEach(a=>{a.t+=a.pace*dt*60*(1+speed/160);a.progress+=a.pace*dt*60;updateCar(a.obj,a.t)});
+ let delta=angle-lastAngle;if(delta<-.5&&speed>8){lap++;$('lap').textContent=Math.min(lap,totalLaps)+'/'+totalLaps;if(lap>totalLaps){finish()}}lastAngle=angle;
+ $('speed').textContent=Math.round(speed*3.6);gear=speed<2?1:Math.min(8,Math.floor(speed/12)+1);$('gear').textContent=gear;
+ $('time').textContent=fmt(elapsed);
+ }}
+ let p=player.position,forward=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));let target=new THREE.Vector3(p.x-forward.x*12,6.8,p.z-forward.z*12);camera.position.lerp(target,.09);camera.lookAt(p.x,1.1,p.z);
+ renderer.render(scene,camera);
+}
+$('start').onclick=begin;$('again').onclick=()=>{result.style.display='none';overlay.style.display='grid';$('lights').querySelectorAll('.light').forEach(l=>l.classList.remove('on'))};
+$('mode').onchange=()=>{$('careerInfo').textContent=$('mode').value==='career'?`Career progress: ${careerWins} wins · ${careerPoints} points. Results are saved in this browser.`:'Jump straight into a race and fight for the win.'};
+window.addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.code]=false);
+document.querySelectorAll('.touchbtn').forEach(b=>{
+ const k=b.dataset.key;
+ const press=e=>{e.preventDefault();keys[k]=true;b.classList.add('pressed')};
+ const release=e=>{if(e)e.preventDefault();keys[k]=false;b.classList.remove('pressed')};
+ b.addEventListener('pointerdown',press);
+ b.addEventListener('pointerup',release);
+ b.addEventListener('pointercancel',release);
+ b.addEventListener('contextmenu',e=>e.preventDefault());
+ b.addEventListener('touchstart',press,{passive:false});
+ b.addEventListener('touchend',release,{passive:false});
+ b.addEventListener('touchcancel',release,{passive:false});
+});
+window.addEventListener('pointerup',()=>{document.querySelectorAll('.touchbtn').forEach(b=>{keys[b.dataset.key]=false;b.classList.remove('pressed')})});
+window.addEventListener('blur',()=>{keys={}});
+init();
+})();
+</script>
+</body></html>
