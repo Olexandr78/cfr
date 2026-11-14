@@ -23,7 +23,7 @@ button,select{border:1px solid #ffffff2b;background:#172c3e;color:white;border-r
 button{cursor:pointer}button.primary{background:#ed2944;border-color:#ed2944;flex:1}button:active{transform:scale(.98)}
 select{flex:1;min-width:130px}#careerInfo{font-size:13px;color:#b8c9d8;line-height:1.5;margin:14px 0}
 #touch{position:fixed;bottom:18px;left:0;right:0;display:none;justify-content:space-between;padding:0 18px;pointer-events:none;z-index:3}
-.pad{display:flex;gap:10px}.touchbtn{pointer-events:auto;width:68px;height:68px;border-radius:18px;background:#0b1a2beF;border:2px solid #ffffff70;color:white;font-size:24px;font-weight:900;touch-action:none;user-select:none;-webkit-user-select:none;outline:none}
+.pad{display:flex;gap:10px}.touchbtn{pointer-events:auto;width:68px;height:68px;border-radius:18px;background:#0b1a2bef;border:2px solid #ffffff70;color:white;font-size:24px;font-weight:900;touch-action:none;user-select:none;-webkit-user-select:none;outline:none;transition:background .06s,border-color .06s,transform .06s}.touchbtn.pressed{background:#ed2944;border-color:#fff;transform:scale(.94);box-shadow:0 0 18px #ed2944aa}
 @media(pointer:coarse),(max-width:800px){#touch{display:flex}#help{display:none}}
 #result{display:none;position:fixed;inset:0;z-index:4;background:#071018dd;place-items:center;text-align:center}
 #result .panel{width:min(420px,90vw);padding:28px}
@@ -94,7 +94,7 @@ function makeCar(color){
 function pos(t){return {x:A*Math.cos(t),z:B*Math.sin(t)}}
 function tangent(t){return Math.atan2(B*Math.cos(t),-A*Math.sin(t))}
 function resize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
-function updateCar(o,t){let p=pos(t);o.position.set(p.x,0,p.z);o.rotation.y=-tangent(t)+Math.PI/2}
+function updateCar(o,t){let p=pos(t);o.position.set(p.x,0,p.z);o.rotation.y=Math.atan2(A*Math.sin(t),-B*Math.cos(t))}
 function begin(){
  mode=$('mode').value;totalLaps=Number($('laps').value);$('modeLabel').textContent=mode==='career'?'CHAMPIONSHIP':'QUICK RACE';$('overlay').style.display='none';result.style.display='none';
  speed=0;lap=1;elapsed=0;angle=0;lastAngle=0;started=false;running=true;raceStart=performance.now();ai.forEach((a,i)=>{a.t=-(i+1)*.10;a.progress=0;updateCar(a.obj,a.t)});updateCar(player,angle);$('message').textContent='GET READY';$('message').style.display='block';
@@ -115,7 +115,7 @@ function animate(){
  $('speed').textContent=Math.round(speed*3.6);gear=speed<2?1:Math.min(8,Math.floor(speed/12)+1);$('gear').textContent=gear;
  $('time').textContent=fmt(elapsed);
  }}
- let p=player.position,forward=new THREE.Vector3(Math.sin(player.rotation.y),0,Math.cos(player.rotation.y));let target=new THREE.Vector3(p.x-forward.x*12,6.8,p.z-forward.z*12);camera.position.lerp(target,.09);camera.lookAt(p.x,1.1,p.z);
+ let p=player.position,forward=new THREE.Vector3(-Math.sin(player.rotation.y),0,-Math.cos(player.rotation.y));let target=new THREE.Vector3(p.x-forward.x*14,7.2,p.z-forward.z*14);camera.position.lerp(target,.14);let look=new THREE.Vector3(p.x+forward.x*7,1.25,p.z+forward.z*7);camera.lookAt(look);
  renderer.render(scene,camera);
 }
 $('start').onclick=begin;$('again').onclick=()=>{result.style.display='none';overlay.style.display='grid';$('lights').querySelectorAll('.light').forEach(l=>l.classList.remove('on'))};
@@ -123,17 +123,14 @@ $('mode').onchange=()=>{$('careerInfo').textContent=$('mode').value==='career'?`
 window.addEventListener('keydown',e=>{keys[e.code]=true;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault()});window.addEventListener('keyup',e=>keys[e.code]=false);
 document.querySelectorAll('.touchbtn').forEach(b=>{
  const k=b.dataset.key;
- const press=e=>{e.preventDefault();keys[k]=true;b.classList.add('pressed')};
+ const press=e=>{e.preventDefault();keys[k]=true;b.classList.add('pressed');if(b.setPointerCapture&&e.pointerId!==undefined){try{b.setPointerCapture(e.pointerId)}catch(_){}}};
  const release=e=>{if(e)e.preventDefault();keys[k]=false;b.classList.remove('pressed')};
  b.addEventListener('pointerdown',press);
  b.addEventListener('pointerup',release);
  b.addEventListener('pointercancel',release);
+ b.addEventListener('lostpointercapture',release);
  b.addEventListener('contextmenu',e=>e.preventDefault());
- b.addEventListener('touchstart',press,{passive:false});
- b.addEventListener('touchend',release,{passive:false});
- b.addEventListener('touchcancel',release,{passive:false});
 });
-window.addEventListener('pointerup',()=>{document.querySelectorAll('.touchbtn').forEach(b=>{keys[b.dataset.key]=false;b.classList.remove('pressed')})});
 window.addEventListener('blur',()=>{keys={}});
 init();
 })();
